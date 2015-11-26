@@ -114,9 +114,13 @@ function SliderDirective($$rAF, $window, $mdAria, $mdUtil, $mdConstant, $mdThemi
     var throttledRefreshDimensions = $mdUtil.throttle(refreshSliderDimensions, 5000);
 
     // Default values, overridable by attrs
-    angular.isDefined(attr.min) ? attr.$observe('min', updateMin) : updateMin(0);
-    angular.isDefined(attr.max) ? attr.$observe('max', updateMax) : updateMax(100);
+    // TODO(@carmen) what if all min, max and dataValues are defined
+    if(!angular.isDefined(attr.mdSliderData)) {
+      angular.isDefined(attr.min) ? attr.$observe('min', updateMin) : updateMin(0);
+      angular.isDefined(attr.max) ? attr.$observe('max', updateMax) : updateMax(100);
+    }
     angular.isDefined(attr.step)? attr.$observe('step', updateStep) : updateStep(1);
+    angular.isDefined(attr.mdSliderData) ? attr.$observe('mdSliderData', updateSliderData): updateSliderData();
 
     // We have to manually stop the $watch on ngDisabled because it exists
     // on the parent scope, and won't be automatically destroyed when
@@ -163,6 +167,7 @@ function SliderDirective($$rAF, $window, $mdAria, $mdUtil, $mdConstant, $mdThemi
     var min;
     var max;
     var step;
+    var sliderData;
     function updateMin(value) {
       min = parseFloat(value);
       element.attr('aria-valuemin', value);
@@ -179,6 +184,33 @@ function SliderDirective($$rAF, $window, $mdAria, $mdUtil, $mdConstant, $mdThemi
     }
     function updateAriaDisabled(isDisabled) {
       element.attr('aria-disabled', !!isDisabled);
+    }
+    function updateSliderData(data) {
+      if(!angular.isArray(data)) {
+          var msg = 'Slider data must be an array. Found ' + typeof data + ' instead';
+          $log.error(msg);
+          throw new Error(msg);
+      }
+
+      validateSliderData(data);
+      // TODO @carmen better way to do this?
+      min = data[0].value ? data[0].value : data[0];
+      max = data[data.length-1].value ? data[data.length-1].value : data[data.length-1];
+
+      sliderData = data;
+      min = updateMin(min);
+      max = updateMax(max);
+      updateAll();
+      // TODO @carmen what if ng-model is not in the array of values?
+      // TODO @carmen any aria attrs need to be added here?
+    }
+
+    function validateSliderData(data) {
+      // TODO @carmen
+       // check if empty array
+      //  check if array of integers
+      // check if array of objects in correct format
+      // check if discrete slider if array of objects
     }
 
     // Draw the ticks with canvas.
